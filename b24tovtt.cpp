@@ -6,6 +6,10 @@
 
 namespace
 {
+const char STYLE_TEMPLETE_VLC[] = "\nSTYLE\n::cue(c){font-size:0.001em;color:rgba(0,0,0,0);visibility:hidden}\n";
+
+const char B24CAPTION_MAGIC[] = "b24caption-2aaf6fcf-6388-4e59-88ff-46e1555d0edd";
+
 #ifdef _WIN32
 std::string NativeToString(const wchar_t *s)
 {
@@ -204,12 +208,26 @@ bool ProcessFormatVttCue(std::string &cue, int staMsec, int endMsec, std::vector
                     endMsec / 3600000, endMsec / 60000 % 60, endMsec / 1000 % 60, endMsec % 1000);
             cue = buf;
             cue.append(group0, 0, 11);
-            cue += '>';
+            cue += "><c>";
             EscapeSpecialChars(cue, group0.c_str() + 12);
-            cue += "</v>\n<v ";
+            cue += "</c></v>\n<v ";
             cue.append(groupN, 0, 11);
-            cue += '>';
+            cue += "><c>";
+            size_t i = cue.size();
             EscapeSpecialChars(cue, groupN.c_str() + 12);
+
+            // Insert tags before and after the readable text.
+            bool isIn = true;
+            for (; i < cue.size(); ++i) {
+                if (cue[i] == '\n') {
+                    cue.replace(i, 1, isIn ? "</c>" : "<c>");
+                    i += isIn ? 3 : 2;
+                    isIn = !isIn;
+                }
+            }
+            if (isIn) {
+                cue += "</c>";
+            }
             cue += "</v>\n";
             return true;
         }
@@ -226,6 +244,7 @@ int main(int argc, char **argv)
 {
     char lang = '1';
     int delayMsec = -300;
+    std::string styleName = "none";
     std::string staPattern = "^ix";
     std::string endPattern = "^ox";
 #ifdef _WIN32
@@ -243,7 +262,7 @@ int main(int argc, char **argv)
             c = s[1];
         }
         if (c == 'h') {
-            fprintf(stderr, "Usage: b24tovtt [-l lang][-d delay][-c chapter][-s pattern][-e pattern] dest\n");
+            fprintf(stderr, "Usage: b24tovtt [-l lang][-d delay][-t style][-c chapter][-s pattern][-e pattern] dest\n");
             return 2;
         }
         bool invalid = false;
@@ -254,6 +273,10 @@ int main(int argc, char **argv)
             }
             else if (c == 'd') {
                 delayMsec = static_cast<int>(strtol(NativeToString(argv[++i]).c_str(), nullptr, 10));
+            }
+            else if (c == 't') {
+                styleName = NativeToString(argv[++i]);
+                invalid = !(styleName == "vlc" || styleName == "none");
             }
             else if (c == 'c') {
                 chapterFileName = argv[++i];
@@ -346,7 +369,8 @@ int main(int argc, char **argv)
                             }
                             if (!fpDest) {
                                 fpDest = fpDestFile ? fpDestFile : stdout;
-                                fprintf(fpDest, "WEBVTT\nKind: metadata\n");
+                                fprintf(fpDest, "WEBVTT\n\nNOTE\n%s\n%s", B24CAPTION_MAGIC,
+                                        styleName == "vlc" ? STYLE_TEMPLETE_VLC : "");
                             }
                             fprintf(fpDest, "\n%s", cue.c_str());
                             fflush(fpDest);
@@ -355,6 +379,26 @@ int main(int argc, char **argv)
                     group0 = nextGroup0;
                     groupN.assign(line, i + 1);
                     lastPts = pts;
+
+                    size_t paramPos = line.find(";text=");
+                    if (paramPos != std::string::npos && paramPos < i) {
+                        // Insert "\n" before and after the readable text.
+                        size_t byteCount = 12;
+                        char *endp;
+                        for (const char *p = line.c_str() + paramPos + 5; *p == '=' || *p == ','; p = endp) {
+                            int codeCount = static_cast<int>(strtol(p + 1, &endp, 10));
+                            while (codeCount > 0 && byteCount < groupN.size()) {
+                                ++byteCount;
+                                if (byteCount == groupN.size() || (groupN[byteCount] & 0xc0) != 0x80) {
+                                    --codeCount;
+                                }
+                            }
+                            if (codeCount != 0) {
+                                break;
+                            }
+                            groupN.insert(byteCount++, "\n");
+                        }
+                    }
                 }
             }
         }
@@ -381,7 +425,8 @@ int main(int argc, char **argv)
             }
             if (!fpDest) {
                 fpDest = fpDestFile ? fpDestFile : stdout;
-                fprintf(fpDest, "WEBVTT\nKind: metadata\n");
+                fprintf(fpDest, "WEBVTT\n\nNOTE\n%s\n%s", B24CAPTION_MAGIC,
+                        styleName == "vlc" ? STYLE_TEMPLETE_VLC : "");
             }
             fprintf(fpDest, "\n%s", cue.c_str());
             fflush(fpDest);

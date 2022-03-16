@@ -2,7 +2,7 @@
 
 使用法:
 
-b24tovtt [-l lang][-d delay][-c chapter][-s pattern][-e pattern] dest
+b24tovtt [-l lang][-d delay][-t style][-c chapter][-s pattern][-e pattern] dest
 
 -l lang, 1<=range<=8, default=1
   出力する字幕の言語。
@@ -12,6 +12,11 @@ b24tovtt [-l lang][-d delay][-c chapter][-s pattern][-e pattern] dest
   このオプションの既定値は音声ストリーム基準で処理するデコーダ(L-SMASH Worksなど)に最適化されている。
   映像が最初にデコードされる位置までの音声をカットすると思われるデコーダ(NVEncCなど)には-700ぐらいが適切。
   再生したとき字幕の表示が遅れるように感じる場合はより小さくする。
+
+-t style, "vlc" or "none", default="none"
+  出力するSTYLEブロックのテンプレート名。
+  - "vlc": VLCメディアプレーヤー(ver.3.0.16時点)で最低限の表示ができるようなSTYLEを出力。
+  - "none": 出力しない。
 
 -c chapter, default=""
   出力をカット編集する場合、Nero/OGM形式のチャプターファイル名。
@@ -47,9 +52,12 @@ dest
 > tsreadex -n -1 -r - foo.m2t | b24tovtt foo.vtt
 するとトレースに含まれるエスケープされたARIB字幕データが、以下のようなWebVTTのボイスタグ風のキューとして出力される。
 > 00:00:00.000 --> 00:00:02.345
-> <v b24caption0>%80%00%00%3F%02%1Ajpn%84%3Aeng%84%={%=}</v>
-> <v b24caption1>%84%00%00%3F%={%1F%20%={%0C%=}%=}</v>
+> <v b24caption0><c>%80%00%00%3F%02%1Ajpn%84%3Aeng%84%={%=}</c></v>
+> <v b24caption1><c>%84%00%00%3F%={%1F%20%={%0C%=}%1F%20%={%^[7 S%^[840;480 V</c>ここは読める<c>%=}%=}</c></v>
+可読な部分以外はクラスタグで囲われる(このタグはとくに必須ではないので後処理で消したりしてもかまわない)。
 
 その他:
 
 ライセンスはMITとする。
+
+このツールの主な目的は、ARIB字幕データをある程度編集に便利な形で、劣化させず、コンパクトに格納すること。
