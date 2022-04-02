@@ -276,7 +276,7 @@ int main(int argc, char **argv)
             }
             else if (c == 't') {
                 styleName = NativeToString(argv[++i]);
-                invalid = !(styleName == "vlc" || styleName == "none");
+                invalid = !(styleName == "nobom-vlc" || styleName == "vlc" || styleName == "nobom" || styleName == "none");
             }
             else if (c == 'c') {
                 chapterFileName = argv[++i];
@@ -369,8 +369,10 @@ int main(int argc, char **argv)
                             }
                             if (!fpDest) {
                                 fpDest = fpDestFile ? fpDestFile : stdout;
-                                fprintf(fpDest, "WEBVTT\n\nNOTE\n%s\n%s", B24CAPTION_MAGIC,
-                                        styleName == "vlc" ? STYLE_TEMPLETE_VLC : "");
+                                fprintf(fpDest, "%sWEBVTT\n\nNOTE %s\n%s",
+                                        styleName.find("nobom") != std::string::npos ? "" : "\xEF\xBB\xBF",
+                                        B24CAPTION_MAGIC,
+                                        styleName.find("vlc") != std::string::npos ? STYLE_TEMPLETE_VLC : "");
                             }
                             fprintf(fpDest, "\n%s", cue.c_str());
                             fflush(fpDest);
@@ -425,8 +427,10 @@ int main(int argc, char **argv)
             }
             if (!fpDest) {
                 fpDest = fpDestFile ? fpDestFile : stdout;
-                fprintf(fpDest, "WEBVTT\n\nNOTE\n%s\n%s", B24CAPTION_MAGIC,
-                        styleName == "vlc" ? STYLE_TEMPLETE_VLC : "");
+                fprintf(fpDest, "%sWEBVTT\n\nNOTE %s\n%s",
+                        styleName.find("nobom") != std::string::npos ? "" : "\xEF\xBB\xBF",
+                        B24CAPTION_MAGIC,
+                        styleName.find("vlc") != std::string::npos ? STYLE_TEMPLETE_VLC : "");
             }
             fprintf(fpDest, "\n%s", cue.c_str());
             fflush(fpDest);

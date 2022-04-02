@@ -13,10 +13,11 @@ b24tovtt [-l lang][-d delay][-t style][-c chapter][-s pattern][-e pattern] dest
   映像が最初にデコードされる位置までの音声をカットすると思われるデコーダ(NVEncCなど)には-700ぐらいが適切。
   再生したとき字幕の表示が遅れるように感じる場合はより小さくする。
 
--t style, "vlc" or "none", default="none"
+-t style, "nobom-vlc" or "vlc" or "nobom" or "none", default="none"
   出力するSTYLEブロックのテンプレート名。
-  - "vlc": VLCメディアプレーヤー(ver.3.0.16時点)で最低限の表示ができるようなSTYLEを出力。
-  - "none": 出力しない。
+  - "*vlc": VLCメディアプレーヤー(ver.3.0.16時点)で最低限の表示ができるようなSTYLEを出力。
+  - "nobom" or "none": 出力しない。
+  - "nobom*": バイトオーダーマークの出力を抑制する。
 
 -c chapter, default=""
   出力をカット編集する場合、Nero/OGM形式のチャプターファイル名。
